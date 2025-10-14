@@ -1,0 +1,370 @@
+{
+  "model_info": {
+    "model_type": "scada_transformer_monitoring",
+    "model_version": "1.0.0",
+    "model_name": "Advanced SCADA Fault Detection Model",
+    "framework": "tensorflow/keras",
+    "architecture": "Multi-output deep neural network with attention mechanism",
+    "creation_date": "2025-10-14T18:46:20.687345",
+    "fault_categories": [
+      "healthy",
+      "thermal_fault",
+      "electrical_fault",
+      "mechanical_fault",
+      "oil_degradation",
+      "partial_discharge"
+    ],
+    "num_fault_types": 6,
+    "feature_count": 7,
+    "training_samples": 25000,
+    "training_method": "Supervised learning with FocalLoss and class balancing",
+    "validation_split": 0.25,
+    "test_accuracy_target": "88-93%"
+  },
+  "input_features": {
+    "feature_names": [
+      "VLF_mean",
+      "VLF_std",
+      "temp_grad",
+      "h2_ratio",
+      "voltage_kv",
+      "power_mva",
+      "age_years"
+    ],
+    "feature_count": 7,
+    "expected_shape": [
+      7
+    ],
+    "scaling_method": "StandardScaler (mean=0, std=1)",
+    "feature_categories": {
+      "electrical": [
+        "voltage_kv"
+      ],
+      "thermal": [
+        "temp_grad"
+      ],
+      "gas_analysis": [
+        "h2_ratio"
+      ],
+      "metadata": [
+        "voltage_kv",
+        "power_mva",
+        "age_years"
+      ]
+    },
+    "required_sensors": [
+      "Voltage sensors (L1, L2)",
+      "Current sensors (L1, L2)",
+      "Frequency meter",
+      "THD analyzer",
+      "Temperature sensors (oil top/bottom)",
+      "DGA analyzer (H2, CH4 minimum)"
+    ]
+  },
+  "fault_mapping": {
+    "0": "healthy",
+    "1": "thermal_fault",
+    "2": "electrical_fault",
+    "3": "mechanical_fault",
+    "4": "oil_degradation",
+    "5": "partial_discharge"
+  },
+  "fault_descriptions": {
+    "healthy": {
+      "description": "Normal operation, no faults detected",
+      "severity_threshold": 0.0,
+      "criticality_threshold": 0.0,
+      "typical_indicators": "All parameters within normal ranges",
+      "action_required": "Continue routine monitoring and maintenance schedule",
+      "inspection_frequency": "As per standard maintenance plan"
+    },
+    "thermal_fault": {
+      "description": "Overheating or cooling system issues",
+      "severity_threshold": 0.3,
+      "criticality_threshold": 0.4,
+      "typical_indicators": "Elevated oil temperature, high load, cooling system degradation",
+      "action_required": "Check cooling system, verify oil circulation, inspect radiators and fans",
+      "inspection_frequency": "Within 24-48 hours",
+      "dga_indicators": "Elevated CH4, C2H4, C2H2 gases"
+    },
+    "electrical_fault": {
+      "description": "Electrical system problems (voltage/current imbalance, THD issues)",
+      "severity_threshold": 0.4,
+      "criticality_threshold": 0.5,
+      "typical_indicators": "High THD, voltage/current imbalance, abnormal frequency",
+      "action_required": "Inspect tap changer, check connections, verify load distribution, test insulation resistance",
+      "inspection_frequency": "Within 48-72 hours",
+      "dga_indicators": "Elevated H2, C2H2 gases indicating arcing"
+    },
+    "mechanical_fault": {
+      "description": "Physical/mechanical damage, tap changer issues, structural problems",
+      "severity_threshold": 0.5,
+      "criticality_threshold": 0.6,
+      "typical_indicators": "Abnormal vibration, tap changer malfunction, winding displacement",
+      "action_required": "FRA testing, tap changer inspection, mechanical integrity assessment, vibration analysis",
+      "inspection_frequency": "Within 24-48 hours",
+      "dga_indicators": "May show normal DGA but mechanical tests show issues"
+    },
+    "oil_degradation": {
+      "description": "Insulating oil quality degradation or contamination",
+      "severity_threshold": 0.4,
+      "criticality_threshold": 0.5,
+      "typical_indicators": "Abnormal DGA results, moisture ingress, oxidation",
+      "action_required": "Oil sampling and detailed DGA, moisture analysis, consider oil filtration or replacement",
+      "inspection_frequency": "Within 48-72 hours",
+      "dga_indicators": "Elevated CO, CO2, moisture content, low breakdown voltage"
+    },
+    "partial_discharge": {
+      "description": "Insulation breakdown with partial discharge activity",
+      "severity_threshold": 0.6,
+      "criticality_threshold": 0.7,
+      "typical_indicators": "High H2 gas, insulation degradation, corona activity",
+      "action_required": "URGENT: Detailed PD testing, insulation resistance testing, consider de-energization",
+      "inspection_frequency": "IMMEDIATE (within 12-24 hours)",
+      "dga_indicators": "Very high H2, elevated CH4, possible C2H2"
+    }
+  },
+  "class_weights": {
+    "0": 1.0,
+    "1": 1.0,
+    "2": 1.0,
+    "3": 1.0,
+    "4": 1.0,
+    "5": 1.0
+  },
+  "preprocessing": {
+    "scaler": {
+      "type": "StandardScaler",
+      "description": "Standardizes features to zero mean and unit variance",
+      "fitted": true,
+      "required_file": "scada_scaler.pkl"
+    },
+    "encoder": {
+      "type": "LabelEncoder",
+      "classes": [
+        "healthy",
+        "thermal_fault",
+        "electrical_fault",
+        "mechanical_fault",
+        "oil_degradation",
+        "partial_discharge"
+      ],
+      "num_classes": 6,
+      "required_file": "scada_fault_encoder.pkl"
+    }
+  },
+  "model_outputs": {
+    "anomaly": {
+      "type": "binary_classification",
+      "shape": [
+        1
+      ],
+      "activation": "sigmoid",
+      "description": "Binary anomaly detection (0=normal, 1=anomaly)",
+      "threshold": 0.5,
+      "interpretation": "Probability that transformer is in abnormal state"
+    },
+    "fault_type": {
+      "type": "multiclass_classification",
+      "shape": [
+        6
+      ],
+      "activation": "softmax",
+      "classes": [
+        "healthy",
+        "thermal_fault",
+        "electrical_fault",
+        "mechanical_fault",
+        "oil_degradation",
+        "partial_discharge"
+      ],
+      "description": "Fault type classification probabilities",
+      "interpretation": "Probability distribution over all fault types"
+    },
+    "severity": {
+      "type": "regression",
+      "shape": [
+        1
+      ],
+      "activation": "sigmoid",
+      "range": [
+        0.0,
+        1.0
+      ],
+      "description": "Fault severity score (0=minor, 1=critical)",
+      "levels": {
+        "low": [
+          0.0,
+          0.3
+        ],
+        "medium": [
+          0.3,
+          0.7
+        ],
+        "high": [
+          0.7,
+          1.0
+        ]
+      }
+    },
+    "criticality": {
+      "type": "regression",
+      "shape": [
+        1
+      ],
+      "activation": "sigmoid",
+      "range": [
+        0.0,
+        1.0
+      ],
+      "description": "Operational criticality (0=normal, 1=emergency)",
+      "levels": {
+        "normal": [
+          0.0,
+          0.3
+        ],
+        "warning": [
+          0.3,
+          0.7
+        ],
+        "critical": [
+          0.7,
+          1.0
+        ]
+      }
+    }
+  },
+  "thresholds": {
+    "anomaly_detection": {
+      "threshold": 0.5,
+      "description": "Probability threshold for anomaly classification"
+    },
+    "confidence_levels": {
+      "high_confidence": 0.8,
+      "medium_confidence": 0.6,
+      "low_confidence": 0.4,
+      "description": "Confidence thresholds for prediction reliability"
+    },
+    "severity_levels": {
+      "low": {
+        "range": [
+          0.0,
+          0.3
+        ],
+        "action": "Monitor, schedule maintenance"
+      },
+      "medium": {
+        "range": [
+          0.3,
+          0.7
+        ],
+        "action": "Investigate within 48-72 hours"
+      },
+      "high": {
+        "range": [
+          0.7,
+          1.0
+        ],
+        "action": "Urgent action required within 24 hours"
+      }
+    },
+    "criticality_levels": {
+      "normal": {
+        "range": [
+          0.0,
+          0.3
+        ],
+        "action": "Continue normal operation"
+      },
+      "warning": {
+        "range": [
+          0.3,
+          0.7
+        ],
+        "action": "Increased monitoring, prepare for intervention"
+      },
+      "critical": {
+        "range": [
+          0.7,
+          1.0
+        ],
+        "action": "Immediate intervention, consider de-energization"
+      }
+    }
+  },
+  "model_performance": {
+    "expected_metrics": {
+      "anomaly_accuracy": "92-96%",
+      "fault_classification_accuracy": "88-93%",
+      "top2_accuracy": "95-98%",
+      "severity_mae": "<0.12",
+      "criticality_mae": "<0.15"
+    },
+    "training_configuration": {
+      "optimizer": "AdamW",
+      "learning_rate": 0.001,
+      "weight_decay": 0.01,
+      "batch_size": 32,
+      "epochs": 100,
+      "early_stopping_patience": 15,
+      "loss_function": "FocalLoss with class weights"
+    }
+  },
+  "usage": {
+    "python_example": "\n# Load pipeline\nfrom scada_pipeline import SCADATransformerPipeline\n\npipeline = SCADATransformerPipeline(\n    model_path=\"best_scada_model.keras\",\n    scaler_path=\"scada_scaler.pkl\",\n    encoder_path=\"scada_fault_encoder.pkl\"\n)\n\n# Run prediction\nresults = pipeline.run_pipeline(\n    data=\"scada_readings.csv\",\n    use_tta=True\n)\n            ",
+    "required_files": [
+      "best_scada_model.keras",
+      "scada_scaler.pkl",
+      "scada_fault_encoder.pkl",
+      "scada_model_metadata.json"
+    ],
+    "input_format": {
+      "csv_columns": [
+        "voltage_l1",
+        "voltage_l2",
+        "current_l1",
+        "current_l2",
+        "frequency",
+        "thd_voltage",
+        "thd_current",
+        "oil_temp_top",
+        "oil_temp_bottom",
+        "h2_gas_ppm",
+        "ch4_gas_ppm",
+        "voltage_kv",
+        "power_mva",
+        "age_years"
+      ],
+      "units": {
+        "voltage_l1/l2": "Volts",
+        "current_l1/l2": "Amperes",
+        "frequency": "Hz",
+        "thd_voltage/current": "%",
+        "oil_temp": "\u00b0C",
+        "gas_ppm": "parts per million",
+        "voltage_kv": "kV",
+        "power_mva": "MVA",
+        "age_years": "years"
+      }
+    }
+  },
+  "deployment": {
+    "api_endpoint_example": "/api/v1/scada/analyze",
+    "docker_image": "scada-transformer-model:1.0",
+    "recommended_hardware": {
+      "cpu": "4+ cores",
+      "ram": "8GB+",
+      "gpu": "Optional (speeds up batch processing)"
+    },
+    "inference_speed": {
+      "single_sample": "<100ms",
+      "batch_100": "<1s",
+      "with_tta": "2-5x slower but more accurate"
+    }
+  },
+  "maintenance": {
+    "model_retraining": "Every 6-12 months or when new fault patterns emerge",
+    "data_requirements": "Minimum 20,000 samples with balanced fault distribution",
+    "validation": "Compare predictions with field inspection results quarterly"
+  }
+}

@@ -1,0 +1,1 @@
+"""FRA service package placeholder"""
