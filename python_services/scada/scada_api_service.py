@@ -20,7 +20,7 @@ def _resolve_model_paths():
     if h5:
         model_path = h5[0]
     if model_path is None:
-        raise FileNotFoundError("Could not locate SCADA model (.h5) in model/scada")
+        raise FileNotFoundError("Couldd not locate SCADA model (.h5) in model/scada")
     scaler_path = os.path.join(model_root, "scada_scaler.pkl")
     encoder_path = os.path.join(model_root, "scada_fault_encoder.pkl")
     if not os.path.exists(scaler_path) or not os.path.exists(encoder_path):
