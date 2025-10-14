@@ -9,6 +9,7 @@ from typing import Optional
 
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from fastapi.responses import JSONResponse
+from python_services.utils.json_sanitizer import sanitize
 
 # Ensure project root for resolving model paths
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -144,7 +145,9 @@ async def predict_file(file: UploadFile = File(...)):
         os.unlink(tmp_path)
         if results is None:
             raise HTTPException(status_code=500, detail="FRA pipeline failed")
-        return JSONResponse(content=results)
+        # Sanitize before returning
+        safe = sanitize(results)
+        return JSONResponse(content=safe)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -163,10 +166,10 @@ async def predict_json(payload: dict):
             raw_preds = FRA_PIPELINE.predict(X_scaled)
             diagnosis = FRA_PIPELINE.interpret_results(raw_preds)
             recs = FRA_PIPELINE.generate_recommendations(diagnosis)
-            return JSONResponse(content={
+            return JSONResponse(content=sanitize({
                 "diagnosis": diagnosis,
                 "recommendations": recs,
-            })
+            }))
         # If features dict or list is provided, use metadata feature columns
         if "features" in payload:
             features = payload["features"]
@@ -177,7 +180,7 @@ async def predict_json(payload: dict):
             else:
                 raise HTTPException(status_code=400, detail="'features' must be an object or array of objects")
             results = _predict_from_features_df(df)
-            return JSONResponse(content=results)
+            return JSONResponse(content=sanitize(results))
         # Otherwise require a CSV-like text content
         if "csv" in payload:
             import tempfile
@@ -194,7 +197,7 @@ async def predict_json(payload: dict):
             os.unlink(tmp_path)
             if results is None:
                 raise HTTPException(status_code=500, detail="FRA pipeline failed")
-            return JSONResponse(content=results)
+            return JSONResponse(content=sanitize(results))
         raise HTTPException(status_code=400, detail="Invalid JSON schema. Provide arrays (frequencies, magnitude_db, phase_deg) or csv content.")
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

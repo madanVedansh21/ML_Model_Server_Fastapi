@@ -6,6 +6,7 @@ import logging
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
+from python_services.utils.json_sanitizer import sanitize
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -57,7 +58,9 @@ async def predict_json(payload: dict):
         logging.info(f"Pipeline results: {results}")
         if results is None:
             raise HTTPException(status_code=500, detail="SCADA pipeline failed")
-        return JSONResponse(content=results)
+        # Sanitize results to ensure JSON compliance (remove NaN/Inf, convert numpy types)
+        safe = sanitize(results)
+        return JSONResponse(content=safe)
     except Exception as e:
         logging.error(f"Error during prediction: {e}", exc_info=True)
         raise HTTPException(status_code=400, detail=str(e))
